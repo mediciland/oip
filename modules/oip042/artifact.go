@@ -15,6 +15,42 @@ import (
 	"github.com/oipwg/oip/modules/oip042/validators"
 )
 
+type LinkedRecords struct {
+  TXIDS []string
+}
+
+func FindTXIDs(record jsoniter.Any)([]string) {
+	var txids []string
+
+	t := record.Get("type").ToString()
+	st := record.Get("subtype").ToString()
+
+	if t == "property" && st == "tenure" {
+		parties := record.Get("details", "parties")
+		for i := 0; i < parties.Size(); i++ {
+			txids = append(txids, parties.Get(i, "party").ToString())
+		}
+		spatialUnits := record.Get("details", "spatialUnits")
+		for j := 0; j < spatialUnits.Size(); j++ {
+			txids = append(txids, spatialUnits.Get(j).ToString())
+		}
+	}
+
+  return txids
+}
+
+func getLinkedRecords(artifact jsoniter.Any)(map[int]interface{}) {
+	txids := FindTXIDs(artifact)
+
+	linkedRecords := make(map[int]interface{})
+	for i, txid := range txids {
+		lr, _ := queryArtifact(txid)
+		linkedRecords[i] = &lr
+	}
+
+  return linkedRecords
+}
+
 func on42JsonPublishArtifact(artifact jsoniter.Any, tx *datastore.TransactionData) {
 	attr := logger.Attrs{"txid": tx.Transaction.Txid}
 
@@ -76,6 +112,9 @@ func on42JsonPublishArtifact(artifact jsoniter.Any, tx *datastore.TransactionDat
 		Type:          "oip042",
 	}
 
+	linkedRecords := getLinkedRecords(artifact)
+	el.LinkedRecords = linkedRecords
+
 	// Send off a bulk index request :)
 	bir := elastic.NewBulkIndexRequest().Index(datastore.Index(oip042ArtifactIndex)).Type("_doc").Id(tx.Transaction.Txid).Doc(el)
 	datastore.AutoBulk.Add(bir)
@@ -98,6 +137,7 @@ func on42JsonEditArtifact(any jsoniter.Any, tx *datastore.TransactionData, sig s
 		Block:        tx.Block,
 		BlockHash:    tx.BlockHash,
 		Completed:    false,
+		Defective:    false,
 		Signature:    sig,
 		Time:         tx.Transaction.Time,
 		Tx:           tx,

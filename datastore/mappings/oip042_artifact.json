@@ -292,6 +292,10 @@
               "ignore_above": 16
             }
           }
+        },
+        "linkedRecords": {
+          "dynamic": "true",
+          "properties": {}
         }
       }
     }

@@ -6,6 +6,7 @@ type OMeta struct {
 	Block        int64                      `json:"block"`
 	BlockHash    string                     `json:"block_hash"`
 	Completed    bool                       `json:"completed"`
+	Defective    bool                       `json:"defective"`
 	Signature    string                     `json:"signature"`
 	Time         int64                      `json:"time"`
 	Tx           *datastore.TransactionData `json:"-"`
@@ -47,8 +48,9 @@ type elasticOip042Transfer struct {
 }
 
 type elasticOip042Artifact struct {
-	Artifact interface{} `json:"artifact"`
-	Meta     AMeta       `json:"meta"`
+	Artifact      interface{} `json:"artifact"`
+	Meta          AMeta       `json:"meta"`
+	LinkedRecords map[int]interface{} `json:"linkedRecords"`
 }
 
 type elasticOip042Pub struct {
